@@ -8,6 +8,8 @@ typedef struct element
 {
     int occurences;
     char character;
+    struct element *left;
+    struct element *right;
     struct element *next;
 } element;
 
@@ -18,5 +20,6 @@ element * createElement(char character);
 void displayList(list l, FILE *f);
 void destroyList(list l);
 void sortList(list *l);
+void insert(list *l, element *elt);
 
 #endif

@@ -1,4 +1,5 @@
 #include "list.h"
+#include "huffman_tree.h"
 
 int main()
 {
@@ -12,9 +13,10 @@ int main()
     push(&l, 'c');
     push(&l, 'c');
     push(&l, 'c');
-    displayList(l, stdout);
+    push(&l, 'f');
     sortList(&l);
-    displayList(l, stdout);
-    destroyList(l);
+    int size = transformToTree(&l);
+    printf("size : %d\n", size);
+    prefix(l, '\0', 0);
     return 0;
 }

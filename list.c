@@ -82,3 +82,20 @@ void sortList(list *l)
     }
     *l = new_list;
 }
+
+void insert(list *l, element *elt)
+{
+    element *current;
+    if (*l == NULL || (*l)->occurences >= elt->occurences) { 
+        elt->next = *l; 
+        *l = elt; 
+    } 
+    else { 
+        current = *l; 
+        while (current->next != NULL && current->next->occurences > elt->occurences) { 
+            current = current->next; 
+        } 
+        elt->next = current->next; 
+        current->next = elt; 
+    }
+}
