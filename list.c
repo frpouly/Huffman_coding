@@ -2,7 +2,7 @@
 
 void push(list *l, char character) 
 {
-    element *cur = *l;
+    element *cur2, *cur = *l;
     if(cur == NULL) 
     {
         *l = createElement(character);
@@ -53,34 +53,34 @@ void destroyList(list l) {
     }
 }
 
+void swapData(element *a, element *b)
+{
+    element tmp = *b;
+    tmp.occurences = b->occurences;
+    tmp.character = b->character;
+    b->occurences = a->occurences;
+    b->character = a->character;
+    a->occurences = tmp.occurences;
+    a->character = tmp.character;
+}
+
 void sortList(list *l)
 {
-    element *cur_new_list, *next, *cur = *l;
-    list new_list = NULL;
-    while(cur != NULL) 
+    element *i, *j;
+    i = *l;
+    if(i != NULL)
     {
-        next = cur->next;
-        if(new_list == NULL)
+        for(i = *l; i->next != NULL; i = i->next)
         {
-            new_list = cur;
-            cur->next = NULL;
-        }
-        else if(new_list->occurences >= cur->occurences)
-        {
-            cur->next = new_list;
-            new_list = cur;
-        } else {
-            cur_new_list = new_list;
-            while(cur_new_list->next != NULL && cur->occurences > cur_new_list->occurences)
+            for(j = i->next; j != NULL; j = j->next)
             {
-                cur_new_list = cur_new_list->next;
+                if(i->occurences > j->occurences) 
+                {
+                    swapData(i, j);
+                }
             }
-            cur->next = cur_new_list->next;
-            cur_new_list->next = cur;
         }
-        cur = next;
     }
-    *l = new_list;
 }
 
 void insert(list *l, element *elt)
@@ -91,8 +91,8 @@ void insert(list *l, element *elt)
         *l = elt; 
     } 
     else { 
-        current = *l; 
-        while (current->next != NULL && current->next->occurences > elt->occurences) { 
+        current = *l;
+        while (current->next != NULL && current->next->occurences < elt->occurences) { 
             current = current->next; 
         } 
         elt->next = current->next; 

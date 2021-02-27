@@ -3,20 +3,9 @@
 
 int main()
 {
-    list l = NULL;
-    push(&l, 'a');
-    push(&l, 'a');
-    push(&l, 'b');
-    push(&l, 'a');
-    push(&l, 'b');
-    push(&l, 'c');
-    push(&l, 'c');
-    push(&l, 'c');
-    push(&l, 'c');
-    push(&l, 'f');
-    sortList(&l);
-    int size = transformToTree(&l);
-    printf("size : %d\n", size);
-    prefix(l, '\0', 0);
+    FILE * fin = fopen("liste_francais.txt", "r");
+    FILE * fout = fopen("res2.bin", "wb");
+    FILE * fdata = fopen("data.dat", "w");
+    encode(fin, fout, fdata);
     return 0;
 }
