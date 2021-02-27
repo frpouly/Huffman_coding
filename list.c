@@ -29,6 +29,8 @@ element * createElement(char character)
     new_elt->character = character;
     new_elt->occurences = 1;
     new_elt->next = NULL;
+    new_elt->right = NULL;
+    new_elt->left = NULL;
     return new_elt;
 }
 

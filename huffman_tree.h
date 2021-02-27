@@ -22,5 +22,8 @@ unsigned long encodeToFile(FILE * file_in, FILE * file_out, character * characte
 character * getEncodeingCodes(FILE * file_in, int *nb_characters);
 character getCharacter(char c, character * characters, int nb_characters);
 void writeDataToFile(character * characters, int nb_characters, unsigned long nb_bits, FILE * file_data);
+tree readData(int * nb_characters, unsigned long * nb_bits, FILE * file_data);
+void insertElement(character c, tree t);
+void decode(FILE * file_in, FILE * file_out, FILE * file_data);
 
 #endif

@@ -59,11 +59,94 @@ character * writeTreeToArray(tree t, int size)
 void writeDataToFile(character * characters, int nb_characters, unsigned long nb_bits, FILE * file_data)
 {
     int i;
-    fprintf(file_data, "%d\t%lu\n", nb_characters, nb_bits);
+    fprintf(file_data, "%d %lu\n", nb_characters, nb_bits);
     for(i = 0; i < nb_characters; i++)
     {
-        fprintf(file_data, "%c\t%lu\t%d\n", characters[i].character, characters[i].encoding, characters[i].size);
+        fprintf(file_data, "%c %lu %d\n", characters[i].character, characters[i].encoding, characters[i].size);
     }
+}
+
+void insertElement(character c, tree t)
+{
+    int i;
+    element * cur = t;
+    unsigned long tmp, mask = 1;
+    mask <<= c.size - 1;
+    for(i = 0; i < c.size; i++)
+    {
+        tmp = c.encoding & mask;
+        c.encoding <<= 1;
+        if(tmp == 0)
+        {
+            if(cur->left == NULL)
+                cur->left = createElement('\0');
+            cur = cur->left;
+        } 
+        else {
+            if(cur->right == NULL)
+                cur->right = createElement('\0');
+            cur = cur->right;
+        }
+    }
+    cur->character = c.character;
+}
+
+tree readData(int * nb_characters, unsigned long * nb_bits, FILE * file_data) 
+{
+    character * characters;
+    int i;
+    fscanf(file_data, "%d %lu%*c", nb_characters, nb_bits);
+    characters = (character *) malloc(sizeof(character) * (*nb_characters));
+    tree t = createElement('\0');
+    for(i = 0; i < *nb_characters; i++)
+    {
+        fscanf(file_data, "%c%*c%lu%*c%d%*c", &(characters[i].character), &(characters[i].encoding), &(characters[i].size));
+        insertElement(characters[i], t);
+    }
+    return t;
+}
+
+void decodeFromFile(FILE * file_in, FILE * file_out, tree t, unsigned long nb_bits)
+{
+    int j, i = 0;
+    unsigned long msb, mask = 1, buffer;
+    int read_in_buffer = 0;
+    int size_unsigned_long = sizeof(unsigned long) * 8;
+    int nb_reads = nb_bits / size_unsigned_long;
+    unsigned long nb_bits_read = 0;
+    if(nb_bits % size_unsigned_long != 0)
+        nb_reads++;
+    element * cur = t;
+    mask <<= size_unsigned_long - 1; // used to get only most significant bit
+    for(i = 0; i < nb_reads; i++)
+    {
+        fread(& buffer,sizeof(unsigned long),1,file_in);
+        j = 0;
+        while(nb_bits_read < nb_bits && j < size_unsigned_long)
+        {
+            if (cur->character != '\0')
+            {
+                fprintf(file_out, "%c", cur->character);
+                cur = t;
+            }
+            msb = mask & buffer;
+            if(msb == 0)
+                cur = cur->left;
+            else
+                cur = cur->right;
+            nb_bits_read++;
+            j++;
+            buffer <<= 1;
+        }
+    }
+}
+
+void decode(FILE * file_in, FILE * file_out, FILE * file_data)
+{
+    int nb_characters;
+    unsigned long nb_bits;
+    tree t = readData(&nb_characters, &nb_bits, file_data);
+    decodeFromFile(file_in, file_out, t, nb_bits);
 }
 
 void encode(FILE * file_in, FILE * file_out, FILE * file_data)
@@ -96,7 +179,7 @@ unsigned long encodeToFile(FILE * file_in, FILE * file_out, character * characte
             character.encoding <<= size_unsigned_long - character.size;
             character.encoding >>= size_unsigned_long - character.size;
             buffer |= tmp;
-            fwrite((const void*) & buffer,sizeof(unsigned long),1,file_out);
+            fwrite(&buffer, sizeof(unsigned long), 1, file_out);
             nb_writes++;
             buffer = 0;
             actual_size_buffer = 0;
@@ -108,6 +191,7 @@ unsigned long encodeToFile(FILE * file_in, FILE * file_out, character * characte
     } while (c != EOF);
     if(actual_size_buffer > 0) 
     {
+        buffer <<= size_unsigned_long - actual_size_buffer;
         fwrite((const void *) & buffer, sizeof(unsigned long), 1, file_out);
         nb_bits += actual_size_buffer;
     }
