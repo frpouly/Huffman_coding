@@ -3,16 +3,15 @@
 
 int main()
 {
-    FILE * fin = fopen("liste_francais.txt", "r");
-    FILE * fout = fopen("res2.bin", "wb");
-    FILE * fdata = fopen("data.dat", "w");
-    encode(fin, fout, fdata);
+    FILE * fin = fopen("enwik9", "r");
+    FILE * fout = fopen("res.bin", "wb");
+    encode(fin, fout);
     fclose(fin);
     fclose(fout);
-    fclose(fdata);
-    fin = fopen("res2.bin", "rb");
-    fdata = fopen("data.dat", "r");
-    fout = fopen("liste_francais2.text", "w");
-    decode(fin, fout, fdata);
+    fin = fopen("res.bin", "rb");
+    fout = fopen("huffman_tree.c.txt", "w");
+    decode(fin, fout);
+    fclose(fin);
+    fclose(fout);
     return 0;
 }

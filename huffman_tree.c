@@ -29,7 +29,7 @@ int transformToTree(list *l)
     return size;
 }
 
-void prefix(tree t, unsigned long current, int depth, character * characters, int * pos) 
+void prefix(tree t, unsigned long current, int depth, character * characters, int * pos, unsigned long *nb_bits) 
 {
     if(t->character != '\0')
     {
@@ -37,32 +37,36 @@ void prefix(tree t, unsigned long current, int depth, character * characters, in
         characters[*pos].encoding = current;
         characters[*pos].size = depth;
         *pos = *pos + 1;
+        *nb_bits += depth * t->occurences;
     }
     else
     {
         depth++;
-        prefix(t->left, current << 1, depth, characters, pos);
+        prefix(t->left, current << 1, depth, characters, pos, nb_bits);
         current <<= 1;
         current |= 1;
-        prefix(t->right, current, depth, characters, pos);
+        prefix(t->right, current, depth, characters, pos, nb_bits);
     }
 }
 
-character * writeTreeToArray(tree t, int size)
+character * writeTreeToArray(tree t, int size, unsigned long *nb_bits)
 {
     character * characters = (character *) malloc(sizeof(character) * size);
     int pos = 0;
-    prefix(t, '\0', 0, characters, &pos);
+    prefix(t, '\0', 0, characters, &pos, nb_bits);
     return characters;
 }
 
 void writeDataToFile(character * characters, int nb_characters, unsigned long nb_bits, FILE * file_data)
 {
     int i;
-    fprintf(file_data, "%d %lu\n", nb_characters, nb_bits);
+    fwrite(&nb_characters, sizeof(int), 1, file_data);
+    fwrite(&nb_bits, sizeof(unsigned long), 1, file_data);
     for(i = 0; i < nb_characters; i++)
     {
-        fprintf(file_data, "%c %lu %d\n", characters[i].character, characters[i].encoding, characters[i].size);
+        fwrite(&(characters[i].character), sizeof(char), 1, file_data);
+        fwrite(&(characters[i].encoding), sizeof(unsigned long), 1, file_data);
+        fwrite(&(characters[i].size), sizeof(int), 1, file_data);
     }
 }
 
@@ -95,12 +99,15 @@ tree readData(int * nb_characters, unsigned long * nb_bits, FILE * file_data)
 {
     character * characters;
     int i;
-    fscanf(file_data, "%d %lu%*c", nb_characters, nb_bits);
+    fread(nb_characters, sizeof(int), 1, file_data);
+    fread(nb_bits, sizeof(unsigned long), 1, file_data);
     characters = (character *) malloc(sizeof(character) * (*nb_characters));
     tree t = createElement('\0');
     for(i = 0; i < *nb_characters; i++)
     {
-        fscanf(file_data, "%c%*c%lu%*c%d%*c", &(characters[i].character), &(characters[i].encoding), &(characters[i].size));
+        fread(&(characters[i].character), sizeof(char), 1, file_data);
+        fread(&(characters[i].encoding), sizeof(unsigned long), 1, file_data);
+        fread(&(characters[i].size), sizeof(int), 1, file_data);
         insertElement(characters[i], t);
     }
     return t;
@@ -141,23 +148,24 @@ void decodeFromFile(FILE * file_in, FILE * file_out, tree t, unsigned long nb_bi
     }
 }
 
-void decode(FILE * file_in, FILE * file_out, FILE * file_data)
+void decode(FILE * file_in, FILE * file_out)
 {
     int nb_characters;
     unsigned long nb_bits;
-    tree t = readData(&nb_characters, &nb_bits, file_data);
+    tree t = readData(&nb_characters, &nb_bits, file_in);
     decodeFromFile(file_in, file_out, t, nb_bits);
 }
 
-void encode(FILE * file_in, FILE * file_out, FILE * file_data)
+void encode(FILE * file_in, FILE * file_out)
 {
     int nb_characters;
-    character * codes = getEncodeingCodes(file_in, &nb_characters);
-    unsigned long nb_bits = encodeToFile(file_in, file_out, codes, nb_characters);
-    writeDataToFile(codes, nb_characters, nb_bits, file_data);
+    unsigned long nb_bits = 0;
+    character * codes = getEncodeingCodes(file_in, &nb_characters, &nb_bits);
+    writeDataToFile(codes, nb_characters, nb_bits, file_out);
+    encodeToFile(file_in, file_out, codes, nb_characters);
 }
 
-unsigned long encodeToFile(FILE * file_in, FILE * file_out, character * characters, int nb_characters)
+void encodeToFile(FILE * file_in, FILE * file_out, character * characters, int nb_characters)
 {
     unsigned long buffer = 0;
     unsigned long nb_bits = 0;
@@ -183,7 +191,6 @@ unsigned long encodeToFile(FILE * file_in, FILE * file_out, character * characte
             nb_writes++;
             buffer = 0;
             actual_size_buffer = 0;
-            nb_bits += size_unsigned_long;
         }
         actual_size_buffer += character.size;
         buffer <<= character.size;
@@ -193,9 +200,7 @@ unsigned long encodeToFile(FILE * file_in, FILE * file_out, character * characte
     {
         buffer <<= size_unsigned_long - actual_size_buffer;
         fwrite((const void *) & buffer, sizeof(unsigned long), 1, file_out);
-        nb_bits += actual_size_buffer;
     }
-    return nb_bits;
 }
 
 character getCharacter(char c, character * characters, int nb_characters)
@@ -209,7 +214,7 @@ character getCharacter(char c, character * characters, int nb_characters)
     }
 }
 
-character * getEncodeingCodes(FILE * file_in, int *nb_characters)
+character * getEncodeingCodes(FILE * file_in, int *nb_characters, unsigned long *nb_bits)
 {
     char c;
     list l = NULL;
@@ -221,5 +226,5 @@ character * getEncodeingCodes(FILE * file_in, int *nb_characters)
     rewind(file_in);
     sortList(&l);
     *nb_characters = transformToTree(&l);
-    return writeTreeToArray(l, *nb_characters);
+    return writeTreeToArray(l, *nb_characters, nb_bits);
 }
