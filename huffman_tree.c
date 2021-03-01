@@ -49,11 +49,22 @@ void prefix(tree t, unsigned long current, int depth, character * characters, in
     }
 }
 
+void freeTree(tree t)
+{
+    if(t->character == '\0')
+    {
+        freeTree(t->left);
+        freeTree(t->right);
+    }
+    free(t);
+}
+
 character * writeTreeToArray(tree t, int size, unsigned long *nb_bits)
 {
     character * characters = (character *) malloc(sizeof(character) * size);
     int pos = 0;
     prefix(t, '\0', 0, characters, &pos, nb_bits);
+    freeTree(t);
     return characters;
 }
 
@@ -110,6 +121,7 @@ tree readData(int * nb_characters, unsigned long * nb_bits, FILE * file_data)
         fread(&(characters[i].size), sizeof(int), 1, file_data);
         insertElement(characters[i], t);
     }
+    free(characters);
     return t;
 }
 
@@ -154,6 +166,7 @@ void decode(FILE * file_in, FILE * file_out)
     unsigned long nb_bits;
     tree t = readData(&nb_characters, &nb_bits, file_in);
     decodeFromFile(file_in, file_out, t, nb_bits);
+    freeTree(t);
 }
 
 void encode(FILE * file_in, FILE * file_out)
@@ -163,6 +176,7 @@ void encode(FILE * file_in, FILE * file_out)
     character * codes = getEncodeingCodes(file_in, &nb_characters, &nb_bits);
     writeDataToFile(codes, nb_characters, nb_bits, file_out);
     encodeToFile(file_in, file_out, codes, nb_characters);
+    free(codes);
 }
 
 void encodeToFile(FILE * file_in, FILE * file_out, character * characters, int nb_characters)
